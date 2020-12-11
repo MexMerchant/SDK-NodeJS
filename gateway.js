@@ -76,7 +76,7 @@ class Gateway {
 		const config = {
 			method: 'post',
 			url: requestSettings['directUrl'],
-			data: qs.stringify(request),
+			data: qs.stringify(request).replace(/__EQUAL__SIGN__/g, '=').replace('&threeDSResponse=', '&threeDSResponse'),
 			headers: {'Content-Type': 'application/x-www-form-urlencoded' }
 		};
 
@@ -382,7 +382,10 @@ class Gateway {
 		});
 
 		let body = httpBuildQuery(orderedFields);
+		body = body.replace('&threeDSResponse=', '&threeDSResponse');
+		body = body.replace(/__EQUAL__SIGN__/g, '=');
 		body = body.replace(/STAR\-httpbuildquery\-removes\-STAR/g, '%2A');
+		body = body.replace(/%0D%0A|%0A%0D|%0D/ig, '%0A');
 
 		const hash = crypto.createHash('sha512');
 		hash.update(body);
@@ -447,7 +450,10 @@ class Gateway {
 			'deviceScreenResolution': '1x1x1',
 			'deviceAcceptContent': http_accept,
 			'deviceAcceptEncoding': http_accept_encoding,
-			'deviceAcceptLanguage': http_accept_language
+			'deviceAcceptLanguage': http_accept_language,
+			'deviceAcceptCharset': null,
+			'deviceOperatingSystem': 'win',
+			'deviceType': 'desktop',
 		};
 
 		let form_fields = fieldToHtml('browserInfo', device_data);
@@ -470,12 +476,18 @@ class Gateway {
 				var language = (window && window.navigator ? (window.navigator.language ? window.navigator.language : window.navigator.browserLanguage) : '');
 				var timezone = (new Date()).getTimezoneOffset();
 				var java = (window && window.navigator ? navigator.javaEnabled() : false);
+				var charset = null;
+				var os = 'win';
+				var type = 'desktop';
 				var fields = document.forms.collectBrowserInfo.elements;
 				fields['browserInfo[deviceIdentity]'].value = identity;
 				fields['browserInfo[deviceTimeZone]'].value = timezone;
 				fields['browserInfo[deviceCapabilities]'].value = 'javascript' + (java ? ',java' : '');
 				fields['browserInfo[deviceAcceptLanguage]'].value = language;
 				fields['browserInfo[deviceScreenResolution]'].value = screen_width + 'x' + screen_height + 'x' + screen_depth;
+				fields['browserInfo[deviceAcceptCharset]'].value = charset;
+				fields['browserInfo[deviceOperatingSystem]'].value = os;
+				fields['browserInfo[deviceType]'].value = type;
 				window.setTimeout('document.forms.collectBrowserInfo.submit()', 0);
 			</script>`;
 

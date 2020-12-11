@@ -12,19 +12,20 @@ const assert = require('assert');
 
 var server = http.createServer(function (req, res) {   //create web server
 	const getParams = url.parse(req.url, true).query;
+	let body = '';
+	global.times = 0;
 
 	if (req.method != 'POST') {
 		// Every other request after this is a POST.
 		body = htmlUtils.collectBrowserInfo(req);
 		sendResponse(body, res);
 	} else {
-		var body = '';
+		body = '';
 
 		req.on('data', function (data) {
 			body += data;
 
-			// Too much POST data, kill the connection!
-			// 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
+			// Too much POST data,
 			if (body.length > 1e6)
 				request.connection.destroy();
 		});
@@ -32,54 +33,57 @@ var server = http.createServer(function (req, res) {   //create web server
 		req.on('end', function () {
 			var post = qs.parse(body);
 
-			if (getParams["acs"]) {
-			fields = {}
-			for ([k, v] of Object.entries(post)) {
-				fields['threeDSResponse[' + k + ']'] = v
-			}
-
-			body = silentPost(htmlUtils.getPageUrl(req), fields, "_parent")
-
-			sendResponse(body, res);
-
-			} else if (anyKeyStartsWith(post, "threeDSResponse[")) {
-
-			let reqFields = {
-				"action": 'SALE',
-				"threeDSRef": global.threeDSRef
-			};
-
-			for ([k, v] of Object.entries(post)) {
-				if (k.startsWith("threeDSResponse[")) {
-					reqFields[k] = v;
-					}
+			// Collect browser information step - to present to the gateway
+			if (anyKeyStartsWith(post, 'browserInfo[')) {
+				let fields = getInitialFields('https://gateway.example.com/', '127.0.0.1');
+				for ([k, v] of Object.entries(post)) {
+					fields[k.substr(12, k.length -13)] = v;
 				}
 
+				gateway.directRequest(fields).then((response) => {
+					body = processResponseFields(response, gateway);
+					sendResponse(body, res);
+				}).catch((error) => {
+					console.error(error);
+				});
+			// Gateway responds with result from ACS - potentially featuring a
+			// challenge. Extract the method data, and pass back complete with
+			// threeDSRef previously provided to acknowledge the challenge.
+			// Also catches any continuation challenges and continues to post
+			// until we ultimately receive an auth code
+			} else if (!anyKeyStartsWith(post, 'threeDSResponse[')) {
+				let reqFields = {
+					action: 'SALE',
+					merchantID: getInitialFields(null, null).merchantID,
+					threeDSRef: global.threeDSRef,
+					threeDSResponse: '',
+				};
+
+				for ([k, v] of Object.entries(post)) {
+					// http-build-query rightly converts subsequent = signs
+					// but the gateway is expecting them to form nested
+					// arrays. Due to this, we substitue them here and
+					// replace later on.
+					reqFields.threeDSResponse += '[' + k + ']' + '__EQUAL__SIGN__' + v + '&';
+				}
+				// Remove the last & for good measure
+				reqFields.threeDSResponse = reqFields.threeDSResponse.substr(0, reqFields.threeDSResponse.length -1);
 				gateway.directRequest(reqFields).then((response) => {
 					body = processResponseFields(response, gateway);
 					sendResponse(body, res);
-				});
-			} else {
-				// Browser info present, but no threeDSResponse, this means it's
-				// the initial request to the gateway (not 3DS) server.
-				let fields = getInitialFields("https://node.test/any?sid=101", "88.77.66.55");
-
-				for ([k, v] of Object.entries(post)) {
-					if (k.startsWith('browserInfo[')) {
-						fields[k.substr(12, k.length - 13)] = v;
-					}
-				}
-
-				gateway.directRequest(fields).then((responseFields) => {
-					body = processResponseFields(responseFields, gateway);
-					sendResponse(body, res);
+				}).catch((error) => {
+					console.error(error);
 				});
 			}
 		});
 	}
 });
 
+/*
+	anyKeyStartsWith
 
+	Helper function to find matching keys in an object
+*/
 function anyKeyStartsWith(haystack, needle) {
 	for ([k,v] of Object.entries(haystack)) {
 		if (k.startsWith(needle)) {
@@ -90,18 +94,31 @@ function anyKeyStartsWith(haystack, needle) {
 	return false;
 }
 
+/*
+	processResponseFields
+
+	Helper function to monitor and act upon differing
+	gateway responses
+*/
 function processResponseFields(responseFields, gateway) {
 	switch (responseFields["responseCode"]) {
 		case "65802":
+			// TODO - Please change this to local session storage
 			global.threeDSRef = responseFields["threeDSRef"];
 			return htmlUtils.showFrameForThreeDS(responseFields);
 		case "0":
 			return "<p>Thank you for your payment.</p>"
 		default:
-			return "<p>Failed to take payment: " + responseFields["responseMessage"] + "</p>" //HTMLEntities.new.encode TODO
+			return "<p>Failed to take payment: message=" + responseFields["responseMessage"] + " code=" + responseFields["responseCode"] + "</p>" //HTMLEntities.new.encode TODO
 	}
 }
 
+/*
+	sendResponse
+
+	Helper function to wrap sending information
+	steps to the browser
+*/
 function sendResponse(body, res) {
 	res.writeHead(200, { 'Content-Type': 'text/html' });
 	res.write(htmlUtils.getWrapHTML(body));
@@ -140,21 +157,4 @@ function getInitialFields(pageURL, remoteAddress) {
 		"threeDSVersion": "2",
 		"threeDSRedirectURL": pageURL + "&acs=1"
 	}
-}
-
-silentPost = function(url, fields, target = "_self") {
-	fieldsStr = ""
-	for ([k, v] of Object.entries(fields)) {
-		fieldsStr += `<input type="hidden" name="${k}" value="${v}" /> \n`;
-	}
-
-	return `
-		<form id="silentPost" action="${url}" method="post" target="${target}">
-		${fieldsStr}
-		<noscript><input type="submit" value="Continue"></noscript>
-		</form>
-		<script>
-		window.setTimeout('document.forms.silentPost.submit()', 0);
-		</script>
-	`
 }
