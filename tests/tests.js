@@ -54,7 +54,8 @@ function testCollectBrowserInfo() {
 		'browserInfo[deviceAcceptLanguage]',
 	]
 
-	req = {};
+	const req = {};
+
 	req.headers = {};
 	req.headers['user-agent'] = 'ExampleUserAgent';
 	req.headers['accept'] = 'ExampleAcceptParam';
