@@ -5,9 +5,9 @@ const qs = require('querystring');
 
 class Gateway {
 
-	RC_SUCCESS = 0;					// Transaction successful
+	RC_SUCCESS = 0;				// Transaction successful
 	RC_DO_NOT_HONOR = 5;			// Transaction declined
-	RC_NO_REASON_TO_DECLINE = 85;	// Verification successful
+	RC_NO_REASON_TO_DECLINE = 85;		// Verification successful
 
 	RC_3DS_AUTHENTICATION_REQUIRED = 0x1010A; // 3DS Authentication Required
 
@@ -451,7 +451,7 @@ class Gateway {
 			'deviceAcceptContent': http_accept,
 			'deviceAcceptEncoding': http_accept_encoding,
 			'deviceAcceptLanguage': http_accept_language,
-			'deviceAcceptCharset': null,
+			'deviceAcceptCharset': '',
 			'deviceOperatingSystem': 'win',
 			'deviceType': 'desktop',
 		};
