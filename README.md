@@ -14,7 +14,6 @@ This NodeJS SDK provides an easy method to integrate with the payment gateway.
 # Prerequisites
 - The SDK requires the following prerequisites to be met in order to function correctly:
     - Node v12.x+
-    - SSL <span style="color: red">**NB: HTTPS is expected to be in place as the payment gateway will respond over SSL when redirecting the user's browser. Failure to provide an environment where HTTPS traffic is possible, will result in the SDK failing**</span>
     - _htmlentities_ module (`npm install html-entities`)
     - _axios_ module (`npm install axios`)
     - _http-build-query (`npm install http-build-query`)
