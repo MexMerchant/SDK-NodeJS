@@ -91,20 +91,20 @@ function testHostedRequest() {
 <input type="hidden" name="remoteAddress" value="8.8.8.8" />
 <input type="hidden" name="merchantCategoryCode" value="5411" />
 <input type="hidden" name="threeDSVersion" value="2" />
-<input type="hidden" name="threeDSRedirectURL" value="https://gateway.cardstream.com/hosted/&amp;acs=1" />
+<input type="hidden" name="threeDSRedirectURL" value="https://gateway.example.com/hosted/&amp;acs=1" />
 <input type="hidden" name="signature" value="29188d5f84245a36a9a62c43bfae32f1f5c022dc1112147ac7930947762c5c6d14e7f27b4c5406ea8e051f6b73181112f6f7f30bd52b4f1024fff3cc663178b7" />
 <input  type="submit" value="Pay Now">
 </form>
 `;
 
-	let req = getInitialFields("https://gateway.cardstream.com/hosted/", "8.8.8.8");
+	let req = getInitialFields("https://gateway.example.com/hosted/", "8.8.8.8");
 	let hostedResult = gateway.hostedRequest(req);
 
 	expect(hostedResult).to.equal(expected);
 }
 
 function testDirectRequest() {
-	let req = getInitialFields("https://gateway.cardstream.com/direct/", "8.8.8.8");
+	let req = getInitialFields("https://gateway.example.com/direct/", "8.8.8.8");
 
 	req['deviceChannel'] = 'browser';
 	req['deviceIdentity'] = 'ExampleUserAgent';
