@@ -12,10 +12,10 @@ class Gateway {
 	RC_3DS_AUTHENTICATION_REQUIRED = 0x1010A; // 3DS Authentication Required
 
 	//	Gateway Hosted API Endpoint
-	static hostedUrl = 'https://test.3ds-pit.com/hosted/';
+	static hostedUrl = 'https://example.com/hosted/';
 
 	// Gateway Direct API Endpoint
-	static directUrl = "https://test.3ds-pit.com/direct/";
+	static directUrl = "https://example.com/direct/";
 
 	// Merchant Account Id or Alias
 	static merchantID = '100856';
